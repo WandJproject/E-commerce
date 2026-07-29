@@ -33,6 +33,11 @@ urlpatterns = [
         "api/v1/cart/",
         include("apps.cart.api.urls"),
     ),
+
+    path(
+        "api/v1/wishlist/",
+        include("apps.wishlist.api.urls"),
+    ),
     
 ]
 
