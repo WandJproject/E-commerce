@@ -26,3 +26,5 @@ media/
 
 # Windows
 Thumbs.db
+
+.env
