@@ -38,6 +38,10 @@ urlpatterns = [
         "api/v1/wishlist/",
         include("apps.wishlist.api.urls"),
     ),
-    
+
+    path(
+        "api/v1/orders/",
+        include("apps.orders.api.urls"),
+    ),
 ]
 
