@@ -10,7 +10,8 @@ from rest_framework.views import APIView
 from apps.cart.models import Cart
 from apps.orders.models import Order, OrderItem
 
-from .serializers import OrderSerializer
+from .serializers import (OrderSerializer,  UpdateOrderStatusSerializer,
+)
 
 class CheckoutAPIView(APIView):
 
@@ -130,3 +131,29 @@ class OrderDetailAPIView(APIView):
         serializer = OrderSerializer(order)
 
         return Response(serializer.data)
+
+class UpdateOrderStatusAPIView(APIView):
+
+    permission_classes = [permissions.IsAdminUser]
+
+    def patch(self, request, pk):
+
+        order = get_object_or_404(
+            Order,
+            pk=pk,
+        )
+
+        serializer = UpdateOrderStatusSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        order.status = serializer.validated_data["status"]
+
+        order.save()
+
+        return Response(
+            OrderSerializer(order).data,
+            status=status.HTTP_200_OK,
+        )

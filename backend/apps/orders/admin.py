@@ -39,3 +39,6 @@ class OrderItemAdmin(admin.ModelAdmin):
         "price",
         "subtotal",
     )
+
+
+
