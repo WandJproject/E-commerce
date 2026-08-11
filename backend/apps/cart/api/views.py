@@ -24,11 +24,7 @@ class CartAPIView(APIView):
         )
 
         serializer = CartSerializer(cart)
-
-        cart, created = Cart.objects.get_or_create(
-            user=request.user
-        )
-
+    
         return Response(serializer.data)
 
 
