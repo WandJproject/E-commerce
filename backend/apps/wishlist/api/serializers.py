@@ -1,6 +1,6 @@
 from rest_framework import serializers
-
 from apps.wishlist.models import WishlistItem
+
 
 class WishlistItemSerializer(serializers.ModelSerializer):
 
@@ -10,12 +10,10 @@ class WishlistItemSerializer(serializers.ModelSerializer):
     )
 
     product_price = serializers.SerializerMethodField()
-
     product_image = serializers.SerializerMethodField()
 
     class Meta:
         model = WishlistItem
-
         fields = (
             "id",
             "product",
@@ -25,26 +23,25 @@ class WishlistItemSerializer(serializers.ModelSerializer):
             "created_at",
         )
 
-        def get_product_price(self, obj):
-            return (
-                obj.product.discount_price
-                if obj.product.discount_price
-                else obj.product.price
-            )
+    def get_product_price(self, obj):
+        return (
+            obj.product.discount_price
+            if obj.product.discount_price
+            else obj.product.price
+        )
 
-        def get_product_image(self, obj):
+    def get_product_image(self, obj):
+        image = obj.product.images.first()
 
-            image = obj.product.images.first()
+        if image:
+            return image.image.url
 
-            if image:
-                return image.image.url
+        return None
 
-            return None
 
 class AddToWishlistSerializer(serializers.Serializer):
-
     product_id = serializers.IntegerField()
 
-class RemoveFromWishlistSerializer(serializers.Serializer):
 
+class RemoveFromWishlistSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
