@@ -120,6 +120,7 @@ Notes & Next Steps
 - I will not change backend code further—I'll keep producing frontend-focused artifacts (API spec, helper mappings, example requests).
 
 Important deployed behavior:
+
 - Deployed API (checked against https://e-commerce-6kpd.onrender.com) does NOT expose `/cart/update/` (returned 404 in smoke-check). Use one of these frontend strategies:
   - Use `POST /cart/add/` to increase quantity by the delta and `POST /cart/remove/` then `POST /cart/add/` to set a lower quantity (the frontend now does this when `/cart/update/` is missing).
   - After performing adds/removes, always re-GET `/cart/` to obtain authoritative server state.

@@ -161,12 +161,18 @@ export function CartProvider({ children }) {
 
         if (delta > 0) {
           // add the difference
-          await apiAddToCart(tokens.access, { product_id: productId, quantity: delta });
+          await apiAddToCart(tokens.access, {
+            product_id: productId,
+            quantity: delta,
+          });
         } else if (delta < 0) {
           // backend does not support decrement; remove and re-add desired quantity
           await apiRemoveFromCart(tokens.access, { product_id: productId });
           if (quantity > 0) {
-            await apiAddToCart(tokens.access, { product_id: productId, quantity });
+            await apiAddToCart(tokens.access, {
+              product_id: productId,
+              quantity,
+            });
           }
         }
 
