@@ -28,12 +28,15 @@ urlpatterns = [
     ),
 
     path(
+<<<<<<< HEAD
         "update/",
         UpdateCartAPIView.as_view(),
         name="update-cart",
     ),
 
     path(
+=======
+>>>>>>> origin/main
         "clear/",
         ClearCartAPIView.as_view(),
         name="clear-cart",

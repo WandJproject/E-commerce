@@ -12,7 +12,10 @@ from .serializers import (
     CartSerializer,
     RemoveFromCartSerializer,
 )
+<<<<<<< HEAD
 from .views_update import UpdateCartAPIView
+=======
+>>>>>>> origin/main
 
 class CartAPIView(APIView):
 
