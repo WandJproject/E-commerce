@@ -10,8 +10,11 @@ from rest_framework.views import APIView
 from apps.cart.models import Cart
 from apps.orders.models import Order, OrderItem
 
-from .serializers import (OrderSerializer,  UpdateOrderStatusSerializer,
+from .serializers import (
+    OrderSerializer,
+    UpdateOrderStatusSerializer,
 )
+
 
 class CheckoutAPIView(APIView):
 
@@ -24,14 +27,15 @@ class CheckoutAPIView(APIView):
             Cart,
             user=request.user,
         )
-        if not cart.items.exists():
 
+        if not cart.items.exists():
             return Response(
                 {
                     "error": "Your cart is empty."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
         order = Order.objects.create(
             user=request.user,
         )
@@ -41,7 +45,6 @@ class CheckoutAPIView(APIView):
         for item in cart.items.select_related("product"):
 
             if item.quantity > item.product.stock_quantity:
-
                 return Response(
                     {
                         "error": (
@@ -50,44 +53,28 @@ class CheckoutAPIView(APIView):
                         )
                     },
                     status=status.HTTP_400_BAD_REQUEST,
-                ) 
+                )
 
             price = (
                 item.product.discount_price
                 if item.product.discount_price
                 else item.product.price
-            )    
+            )
 
             subtotal = price * item.quantity
 
             OrderItem.objects.create(
-
                 order=order,
-
                 product=item.product,
-
                 price=price,
-
                 quantity=item.quantity,
-
                 subtotal=subtotal,
-            )    
+            )
 
             total += subtotal
 
-            item.product.stock_quantity -= item.quantity
-
-            if item.product.stock_quantity <= 0:
-
-                item.product.is_available = False
-
-            item.product.save()            
-
         order.total_amount = total
-
-        order.save()
-
-        cart.items.all().delete()
+        order.save(update_fields=["total_amount"])
 
         serializer = OrderSerializer(order)
 
@@ -95,6 +82,7 @@ class CheckoutAPIView(APIView):
             serializer.data,
             status=status.HTTP_201_CREATED,
         )
+
 
 class OrderListAPIView(APIView):
 
@@ -116,6 +104,7 @@ class OrderListAPIView(APIView):
 
         return Response(serializer.data)
 
+
 class OrderDetailAPIView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
@@ -132,6 +121,7 @@ class OrderDetailAPIView(APIView):
 
         return Response(serializer.data)
 
+
 class UpdateOrderStatusAPIView(APIView):
 
     permission_classes = [permissions.IsAdminUser]
@@ -144,14 +134,13 @@ class UpdateOrderStatusAPIView(APIView):
         )
 
         serializer = UpdateOrderStatusSerializer(
-            data=request.data
+            data=request.data,
         )
 
         serializer.is_valid(raise_exception=True)
 
         order.status = serializer.validated_data["status"]
-
-        order.save()
+        order.save(update_fields=["status"])
 
         return Response(
             OrderSerializer(order).data,
