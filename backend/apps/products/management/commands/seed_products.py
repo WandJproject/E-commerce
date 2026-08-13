@@ -247,6 +247,8 @@ class Command(BaseCommand):
                                             image_file,
                                             name=image_path.name,
                                         ),
+                                        alt_text=name,
+                                        is_primary=True,
                                     )
 
                                 self.stdout.write(
