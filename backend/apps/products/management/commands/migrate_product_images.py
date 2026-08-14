@@ -107,12 +107,19 @@ class Command(BaseCommand):
 
             with open(image_path, "rb") as image_file:
 
+                # Remove the old image reference
+                if product_image.image:
+                    product_image.image.delete(save=False)
+
+                # Upload to Cloudinary
                 product_image.image.save(
                     image_path.name,
                     File(image_file),
                     save=True,
                 )
 
+                # Reload the object so Django has the actual stored filename
+                product_image.refresh_from_db()
             migrated += 1
 
             self.stdout.write(
