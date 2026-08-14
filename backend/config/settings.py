@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     "apps.orders",
     "apps.reviews",
 
+    "apps.payments",
+
     "corsheaders",
 ]
 

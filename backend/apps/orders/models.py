@@ -42,7 +42,11 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.id}"
-
+def update_total(self):
+    self.total_amount = sum(
+        item.subtotal for item in self.items.all()
+    )
+    self.save(update_fields=["total_amount"])
 class OrderItem(models.Model):
 
     order = models.ForeignKey(

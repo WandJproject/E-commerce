@@ -53,6 +53,13 @@ urlpatterns = [
         "api/v1/reviews/",
         include("apps.reviews.api.urls"),
     ),
+
+
+    path(
+        "api/v1/payments/",
+        include("apps.payments.api.urls"),
+    ),
+
 ]
 if settings.DEBUG:
     urlpatterns += static(
