@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Truck,
@@ -13,8 +13,9 @@ import {
   Watch,
   MoreHorizontal,
 } from "lucide-react";
-import { products } from "../../data/products.js";
+import { products as fallbackProducts } from "../../data/products.js";
 import ProductCard from "../../components/common/ProductCard.jsx";
+import { getProducts } from "../../api/storeApi.js";
 
 const categoryIcons = {
   electronics: Laptop,
@@ -37,41 +38,122 @@ const categoryList = [
 ];
 
 export default function Home() {
-  const topSelling = products.slice(0, 8);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [topSelling, setTopSelling] = useState(fallbackProducts.slice(0, 8));
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getProducts().then((products) => {
+      if (isMounted) {
+        setTopSelling(products.slice(0, 8));
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const heroSlides = [
+    {
+      badge: "Summer Sale",
+      title: "Discover The Best Products For You",
+      description:
+        "Shop the latest trends in fashion, electronics, home, and more.",
+      image:
+        topSelling[0]?.image ||
+        "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&q=80",
+    },
+    {
+      badge: "New Arrivals",
+      title: "Upgrade Your Everyday Essentials",
+      description:
+        "Explore fresh picks from gadgets, style, and home upgrades.",
+      image:
+        topSelling[2]?.image ||
+        "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&q=80",
+    },
+    {
+      badge: "Top Deals",
+      title: "Shop Smarter, Save Bigger",
+      description:
+        "Curated discounts on premium products across every category.",
+      image:
+        topSelling[4]?.image ||
+        "https://images.unsplash.com/photo-1678652197831-2d180705cd2c?w=700&q=80",
+    },
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 4500);
+
+    return () => clearInterval(timer);
+  }, [heroSlides.length]);
 
   return (
     <div>
-      <section className="container-page pt-6">
+      <section className="container-page pt-4">
         <div className="grid lg:grid-cols-[1fr_260px] gap-4">
-          <div className="relative bg-neutral-100 rounded-2xl overflow-hidden grid md:grid-cols-2 items-center">
-            <div className="p-8 md:p-12 z-10">
-              <span className="inline-block bg-accent-soft text-accent text-xs font-semibold px-3 py-1 rounded-full mb-4">
-                Summer Sale
-              </span>
-              <h1 className="text-3xl md:text-4xl font-extrabold leading-tight mb-3">
-                Discover The Best Products For You
-              </h1>
-              <p className="text-neutral-600 mb-6 max-w-sm">
-                Shop the latest trends in fashion, electronics, home, and more.
-              </p>
-              <div className="flex gap-3">
-                <Link to="/shop" className="btn-primary">
-                  Shop Now
-                </Link>
-                <Link to="/shop?filter=deals" className="btn-outline bg-white">
-                  Explore Deals
-                </Link>
+          <div className="relative bg-neutral-100 rounded-2xl overflow-hidden">
+            <div className="relative min-h-[360px] md:min-h-[390px] overflow-hidden">
+              {heroSlides.map((slide, index) => (
+                <div
+                  key={index}
+                  className={`absolute inset-0 min-h-[360px] md:min-h-[390px] grid md:grid-cols-[1fr_420px] items-center transition-opacity duration-700 ease-in-out ${
+                    index === activeIndex ? "opacity-100 z-10" : "opacity-0 z-0"
+                  }`}
+                >
+                  <div className="p-6 md:p-10 z-10 flex flex-col justify-center h-full">
+                    <span className="inline-block bg-accent-soft text-accent text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                      {slide.badge}
+                    </span>
+                    <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-3 max-w-lg">
+                      {slide.title}
+                    </h1>
+                    <p className="text-neutral-600 mb-6 max-w-sm">
+                      {slide.description}
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <Link to="/shop" className="btn-primary">
+                        Shop Now
+                      </Link>
+                      <Link
+                        to="/shop?filter=deals"
+                        className="btn-outline bg-white"
+                      >
+                        Explore Deals
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="hidden md:block h-full min-h-[360px] md:min-h-[390px] relative self-end overflow-hidden rounded-r-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-r from-neutral-100/25 via-transparent to-neutral-100/10" />
+                    <img
+                      src={slide.image}
+                      alt={slide.title}
+                      className="w-full h-full object-cover object-[center_35%]"
+                    />
+                  </div>
+                </div>
+              ))}
+
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 shadow-sm backdrop-blur-sm z-20">
+                {heroSlides.map((_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    aria-label={`Go to slide ${index + 1}`}
+                    onClick={() => setActiveIndex(index)}
+                    className={`rounded-full transition-all duration-300 ${
+                      index === activeIndex
+                        ? "w-8 h-2 bg-brand"
+                        : "w-2 h-2 bg-neutral-300 hover:bg-neutral-400"
+                    }`}
+                  />
+                ))}
               </div>
-            </div>
-            <div className="hidden md:block h-full">
-              <img
-                src={
-                  products[0]?.image ||
-                  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&q=80"
-                }
-                alt="Featured product"
-                className="w-full h-full object-cover"
-              />
             </div>
           </div>
 

@@ -73,8 +73,17 @@ class CheckoutAPIView(APIView):
 
             total += subtotal
 
+            item.product.stock_quantity -= item.quantity
+
+            if item.product.stock_quantity <= 0:
+                item.product.is_available = False
+
+            item.product.save()
+
         order.total_amount = total
         order.save(update_fields=["total_amount"])
+
+        cart.items.all().delete()
 
         serializer = OrderSerializer(order)
 

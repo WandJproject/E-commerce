@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "apps.wishlist",
     "apps.orders",
     "apps.reviews",
+
     "apps.payments",
 
     "corsheaders",

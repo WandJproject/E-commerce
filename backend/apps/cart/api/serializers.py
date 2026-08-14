@@ -62,6 +62,11 @@ class AddToCartSerializer(serializers.Serializer):
         min_value=1,
     )
 
-
 class RemoveFromCartSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
+class UpdateCartSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+
+    quantity = serializers.IntegerField(
+        min_value=1,
+    )

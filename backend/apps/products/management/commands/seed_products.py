@@ -1,4 +1,9 @@
 from decimal import Decimal
+from django.core.management.base import BaseCommand
+from django.utils.text import slugify
+
+from apps.products.models import Category, Brand, Product
+
 from pathlib import Path
 
 from django.core.files import File
@@ -64,14 +69,14 @@ IMAGE_MAP = {
     "Aviator Sunglasses": "accessories/aviatorsunglasses.jpg",
     "Power Bank 20000mAh": "accessories/powerbank.jpg",
 }
-
 class Command(BaseCommand):
     help = "Seed the database with sample products."
 
     def handle(self, *args, **kwargs):
 
+
+
         base_dir = Path(__file__).resolve().parents[4]
-        
         data = {
             "Electronics": {
                 "Apple": [
@@ -181,7 +186,6 @@ class Command(BaseCommand):
         created = 0
 
         for category_name, brands in data.items():
-
             category, _ = Category.objects.get_or_create(
                 name=category_name,
                 defaults={
@@ -190,7 +194,6 @@ class Command(BaseCommand):
             )
 
             for brand_name, products in brands.items():
-
                 brand, _ = Brand.objects.get_or_create(
                     name=brand_name,
                     defaults={
@@ -199,7 +202,6 @@ class Command(BaseCommand):
                 )
 
                 for name, price, stock in products:
-
                     slug = slugify(name)
 
                     product, was_created = Product.objects.get_or_create(
@@ -231,15 +233,10 @@ class Command(BaseCommand):
                     image_relative_path = IMAGE_MAP.get(name)
 
                     if image_relative_path:
-                        image_path = (
-                            base_dir / "sample_images" / image_relative_path
-                        )
+                        image_path = base_dir / "sample_images" / image_relative_path
 
                         if image_path.exists():
-                            if not ProductImage.objects.filter(
-                                product=product
-                            ).exists():
-
+                            if not ProductImage.objects.filter(product=product).exists():
                                 with open(image_path, "rb") as image_file:
                                     ProductImage.objects.create(
                                         product=product,
@@ -256,10 +253,14 @@ class Command(BaseCommand):
                                         f"Image attached: {name}"
                                     )
                                 )
-
                         else:
                             self.stdout.write(
                                 self.style.WARNING(
                                     f"Image not found for {name}: {image_path}"
                                 )
                             )
+                            self.stdout.write(
+            self.style.SUCCESS(
+                f"Successfully created {created} sample products."
+            )
+        )
