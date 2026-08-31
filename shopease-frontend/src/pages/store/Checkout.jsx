@@ -50,26 +50,10 @@ export default function Checkout() {
     if (Object.keys(errs).length > 0) return;
     (async () => {
       try {
-        const payload = {
-          billing: {
-            full_name: form.fullName,
-            email: form.email,
-            address: form.address,
-            city: form.city,
-            zip: form.zip,
-          },
-          items: items.map((i) => ({ product_id: i.id, quantity: i.quantity })),
-          payment: {
-            card_number: form.cardNumber,
-            expiry: form.expiry,
-            cvv: form.cvv,
-          },
-        };
-        await apiCheckout(accessToken, payload);
+        await apiCheckout(accessToken);
         clearCart();
         navigate("/order-success");
       } catch (err) {
-        // keep user on checkout and show a generic error
         setErrors({ submit: "Checkout failed. Please try again." });
       }
     })();
@@ -215,9 +199,6 @@ export default function Checkout() {
                 )}
               </div>
             </div>
-            <p className="text-xs text-neutral-400 mt-3">
-              This is a demo checkout. No real payment is processed.
-            </p>
           </div>
         </div>
 

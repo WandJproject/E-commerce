@@ -8,38 +8,28 @@ import {
   PackageCheck,
   ChevronRight,
 } from "lucide-react";
-import {
-  products as fallbackProducts,
-  getProductById as getFallbackProductById,
-} from "../../data/products.js";
-import { categories as fallbackCategories } from "../../data/categories.js";
 import StarRating from "../../components/common/StarRating.jsx";
 import ProductCard from "../../components/common/ProductCard.jsx";
 import { useCart } from "../../context/CartContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
 import {
   getProductById,
+  getProductBySlug,
   getProducts,
-  apiGetReviews,
+  apiGetProductReviews,
 } from "../../api/storeApi.js";
 
 export default function ProductDetail() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
 
-  const [product, setProduct] = useState(() => getFallbackProductById(id));
-  const [related, setRelated] = useState(
-    fallbackProducts
-      .filter(
-        (p) =>
-          p.category === getFallbackProductById(id)?.category &&
-          p.id !== Number(id),
-      )
-      .slice(0, 4),
-  );
+  const [product, setProduct] = useState(null);
+  const [productError, setProductError] = useState(null);
+  const [related, setRelated] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
+  const [imageErrors, setImageErrors] = useState(new Set());
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [reviews, setReviews] = useState([]);
@@ -49,50 +39,78 @@ export default function ProductDetail() {
   useEffect(() => {
     let isMounted = true;
 
-    getProductById(id).then((nextProduct) => {
-      if (isMounted) {
+    const loadProduct = async () => {
+      try {
+        const nextProduct = await getProductBySlug(slug);
+        if (!isMounted) return;
+        if (!nextProduct) {
+          setProduct(null);
+          setProductError("Product not found.");
+          return;
+        }
         setProduct(nextProduct);
+        setProductError(null);
+      } catch (err) {
+        if (isMounted) {
+          setProduct(null);
+          setProductError("Failed to load product. Please try again.");
+        }
       }
-    });
+    };
 
-    getProducts().then((nextProducts) => {
-      if (isMounted) {
-        const nextRelated = nextProducts
-          .filter(
-            (p) =>
-              p.category ===
-                (product?.category || getFallbackProductById(id)?.category) &&
-              p.id !== Number(id),
-          )
-          .slice(0, 4);
-        setRelated(nextRelated);
-      }
-    });
+    loadProduct();
 
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [slug]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!product) return;
+
+    getProducts()
+      .then((nextProducts) => {
+        if (!isMounted) return;
+        const nextRelated = nextProducts
+          .filter(
+            (p) => p.slug !== slug && p.category === (product?.category || ""),
+          )
+          .slice(0, 4);
+        setRelated(nextRelated);
+      })
+      .catch(() => {
+        if (isMounted) setRelated([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [product, slug]);
 
   useEffect(() => {
     let mounted = true;
     setReviewsLoading(true);
     setReviewsError(null);
-    apiGetReviews()
+
+    if (!product?.id) {
+      setReviewsLoading(false);
+      setReviews([]);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    apiGetProductReviews(product.id)
       .then((res) => {
-        const list = Array.isArray(res?.results)
-          ? res.results
-          : Array.isArray(res)
-            ? res
+        const list = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.results)
+            ? res.results
             : [];
         if (!mounted) return;
-        const filtered = list.filter(
-          (r) =>
-            r.product === product?.id ||
-            r.product === product?.slug ||
-            r.product_slug === product?.slug,
-        );
-        setReviews(filtered);
+        setReviews(list);
       })
       .catch(() => {
         if (!mounted) return;
@@ -104,12 +122,12 @@ export default function ProductDetail() {
     return () => {
       mounted = false;
     };
-  }, [product]);
+  }, [product?.id]);
 
-  if (!product) {
+  if (productError) {
     return (
       <div className="container-page py-20 text-center">
-        <p className="text-lg font-medium mb-4">Product not found.</p>
+        <p className="text-lg font-medium mb-4 text-red-600">{productError}</p>
         <Link to="/shop" className="text-accent font-medium hover:underline">
           Back to Shop
         </Link>
@@ -117,9 +135,15 @@ export default function ProductDetail() {
     );
   }
 
-  const categoryName = fallbackCategories.find(
-    (c) => c.id === product?.category,
-  )?.name;
+  if (!product) {
+    return (
+      <div className="container-page py-20 text-center">
+        <p className="text-lg font-medium mb-4">Loading product...</p>
+      </div>
+    );
+  }
+
+  const categoryName = product?.category || "Product";
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
@@ -131,6 +155,18 @@ export default function ProductDetail() {
     addToCart(product, quantity);
     navigate("/cart");
   };
+
+  const handleImageError = (imageUrl) => {
+    setImageErrors((prev) => new Set([...prev, imageUrl]));
+  };
+
+  const hasValidImage = (imageUrl) => {
+    return imageUrl && !imageErrors.has(imageUrl);
+  };
+
+  const displayGallery = product.gallery.filter(Boolean);
+  const mainImageUrl = displayGallery[activeImage];
+  const mainImageValid = hasValidImage(mainImageUrl);
 
   return (
     <div className="container-page py-8">
@@ -152,24 +188,46 @@ export default function ProductDetail() {
       <div className="grid lg:grid-cols-2 gap-10">
         <div className="grid grid-cols-[80px_1fr] gap-4">
           <div className="flex lg:flex-col gap-3 order-2 lg:order-1">
-            {product.gallery.map((img, idx) => (
-              <button
-                key={img}
-                onClick={() => setActiveImage(idx)}
-                className={`w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                  activeImage === idx ? "border-accent" : "border-neutral-200"
-                }`}
-              >
-                <img src={img} alt="" className="w-full h-full object-cover" />
-              </button>
-            ))}
+            {displayGallery.length > 0 ? (
+              displayGallery.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(idx)}
+                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 flex-shrink-0 ${
+                    activeImage === idx ? "border-accent" : "border-neutral-200"
+                  }`}
+                >
+                  {hasValidImage(img) ? (
+                    <img
+                      src={img}
+                      alt={`${product.name} view ${idx + 1}`}
+                      onError={() => handleImageError(img)}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-neutral-200" />
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="text-xs text-neutral-500 text-center col-span-2">
+                No images
+              </div>
+            )}
           </div>
-          <div className="order-1 lg:order-2 bg-neutral-50 rounded-2xl overflow-hidden aspect-square">
-            <img
-              src={product.gallery[activeImage]}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="order-1 lg:order-2 bg-neutral-50 rounded-2xl overflow-hidden aspect-square flex items-center justify-center">
+            {mainImageValid ? (
+              <img
+                src={mainImageUrl}
+                alt={product.name}
+                onError={() => handleImageError(mainImageUrl)}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="text-neutral-400 text-center px-4">
+                <p className="text-sm">Product image unavailable</p>
+              </div>
+            )}
           </div>
         </div>
 

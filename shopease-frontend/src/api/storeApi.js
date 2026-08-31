@@ -1,9 +1,3 @@
-import {
-  products as fallbackProducts,
-  getProductById as getFallbackProductById,
-} from "../data/products.js";
-import { categories as fallbackCategories } from "../data/categories.js";
-
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   "https://e-commerce-6kpd.onrender.com/api/v1";
@@ -90,14 +84,6 @@ export async function apiRemoveFromCart(token, { product_id }) {
   });
 }
 
-export async function apiUpdateCart(token, { product_id, quantity = 1 }) {
-  return fetchJsonWithOptions(`${API_BASE_URL}/cart/update/`, {
-    method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify({ product_id, quantity }),
-  });
-}
-
 // Wishlist
 export async function apiGetWishlist(token) {
   return fetchJsonWithOptions(`${API_BASE_URL}/wishlist/`, {
@@ -130,18 +116,23 @@ export async function apiGetOrders(token) {
   });
 }
 
-export async function apiCheckout(token, payload) {
+export async function apiCheckout(token, payload = {}) {
+  const hasBody =
+    payload !== undefined &&
+    payload !== null &&
+    Object.keys(payload).length > 0;
   return fetchJsonWithOptions(`${API_BASE_URL}/orders/checkout/`, {
     method: "POST",
     headers: authHeaders(token),
-    body: JSON.stringify(payload),
+    ...(hasBody ? { body: JSON.stringify(payload) } : {}),
   });
 }
 
 // Reviews
-export async function apiGetReviews() {
+export async function apiGetProductReviews(productId) {
   try {
-    return await fetchJson(`${API_BASE_URL}/reviews/`);
+    const url = `${API_BASE_URL}/reviews/product/${productId}/`;
+    return await fetchJson(url);
   } catch {
     return [];
   }
@@ -153,6 +144,15 @@ export async function apiPostReview(token, reviewPayload) {
     headers: authHeaders(token),
     body: JSON.stringify(reviewPayload),
   });
+}
+
+// Legacy function for backward compatibility (deprecated)
+export async function apiGetReviews() {
+  try {
+    return await fetchJson(`${API_BASE_URL}/reviews/`);
+  } catch {
+    return [];
+  }
 }
 
 function normalizeProduct(apiProduct) {
@@ -167,10 +167,6 @@ function normalizeProduct(apiProduct) {
   const primaryImage = apiProduct.images?.find(
     (image) => image.is_primary,
   )?.image;
-  const fallbackImage =
-    apiProduct.images?.[0]?.image ||
-    apiProduct.image ||
-    fallbackProducts[0]?.image;
   const categoryId =
     apiProduct.category?.slug ||
     apiProduct.category?.name?.toLowerCase() ||
@@ -191,7 +187,8 @@ function normalizeProduct(apiProduct) {
     stock: Number(apiProduct.stock_quantity ?? 0),
     category: categoryId,
     brand: brandName,
-    image: primaryImage || fallbackImage,
+    image:
+      primaryImage || apiProduct.images?.[0]?.image || apiProduct.image || null,
     gallery: (apiProduct.images || [])
       .map((image) => image.image)
       .filter(Boolean),
@@ -202,47 +199,33 @@ function normalizeProduct(apiProduct) {
 }
 
 export async function getProducts() {
-  try {
-    const payload = await fetchJson(`${API_BASE_URL}/products/`);
-    const results = Array.isArray(payload?.results) ? payload.results : [];
-
-    if (results.length === 0) {
-      return fallbackProducts;
-    }
-
-    return results.map(normalizeProduct);
-  } catch {
-    return fallbackProducts;
-  }
+  const payload = await fetchJson(`${API_BASE_URL}/products/`);
+  const results = Array.isArray(payload?.results) ? payload.results : [];
+  return results.map(normalizeProduct);
 }
 
 export async function getProductById(id) {
+  const product = await fetchJson(`${API_BASE_URL}/products/${id}/`);
+  return normalizeProduct(product);
+}
+
+export async function getProductBySlug(slug) {
   try {
-    const product = await fetchJson(`${API_BASE_URL}/products/${id}/`);
-    return normalizeProduct(product);
+    const payload = await fetchJson(`${API_BASE_URL}/products/`);
+    const results = Array.isArray(payload?.results) ? payload.results : [];
+    const match = results.find((product) => product.slug === slug);
+    return match ? normalizeProduct(match) : null;
   } catch {
-    return getFallbackProductById(id);
+    return null;
   }
 }
 
 export async function getCategories() {
-  try {
-    const payload = await fetchJson(`${API_BASE_URL}/categories/`);
-    const results = Array.isArray(payload?.results) ? payload.results : [];
-
-    if (results.length === 0) {
-      return fallbackCategories;
-    }
-
-    return results.map((category) => ({
-      id: category.slug || category.name?.toLowerCase(),
-      name: category.name,
-      icon:
-        fallbackCategories.find(
-          (item) => item.id === (category.slug || category.name?.toLowerCase()),
-        )?.icon || "Tag",
-    }));
-  } catch {
-    return fallbackCategories;
-  }
+  const payload = await fetchJson(`${API_BASE_URL}/categories/`);
+  const results = Array.isArray(payload?.results) ? payload.results : [];
+  return results.map((category) => ({
+    id: category.slug || category.name?.toLowerCase(),
+    name: category.name,
+    icon: "Tag",
+  }));
 }
