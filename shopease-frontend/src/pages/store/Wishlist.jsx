@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, Trash2, Star } from "lucide-react";
 import { useWishlist } from "../../context/WishlistContext.jsx";
@@ -8,7 +8,12 @@ import { reviews } from "../../data/customers.js";
 export default function Wishlist() {
   const { items, removeFromWishlist, loading, error } = useWishlist();
   const { addToCart } = useCart();
+  const [imageErrors, setImageErrors] = useState(new Set());
   const featuredReviews = reviews.slice(0, 3);
+
+  const handleImageError = (itemId) => {
+    setImageErrors((prev) => new Set([...prev, itemId]));
+  };
 
   if (loading && items.length === 0) {
     return (
@@ -44,14 +49,23 @@ export default function Wishlist() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((item) => (
           <div key={item.id} className="card p-4 flex gap-4 items-center">
-            <img
-              src={item.image}
-              alt={item.name}
-              className="w-20 h-20 rounded-lg object-cover bg-neutral-50"
-            />
+            <div className="w-20 h-20 rounded-lg overflow-hidden bg-neutral-50 flex-shrink-0 flex items-center justify-center">
+              {item.image && !imageErrors.has(item.id) ? (
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  onError={() => handleImageError(item.id)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs text-neutral-400 text-center px-1">
+                  No image
+                </span>
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <Link
-                to={`/product/${item.id}`}
+                to={`/product/${item.slug || item.id}`}
                 className="font-medium text-sm hover:text-accent line-clamp-2"
               >
                 {item.name}
