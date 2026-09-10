@@ -43,31 +43,25 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     "cloudinary",
     "cloudinary_storage",
-
     'rest_framework',
     'rest_framework_simplejwt',
-
     'django_filters',
-
     'apps.accounts.apps.AccountsConfig',
     'apps.products',
     "apps.cart",
     "apps.wishlist",
     "apps.orders",
     "apps.reviews",
-
     "apps.payments",
-
     "corsheaders",
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -198,12 +192,12 @@ SIMPLE_JWT = {
 }
 
 
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:5173",
-).split(",")
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "https://e-commerce-frontend-migl.onrender.com",
+]
 
-CSRF_TRUSTED_ORIGINS = config(
-    "CSRF_TRUSTED_ORIGINS",
-    default="http://localhost:5173",
-).split(",")
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "https://e-commerce-frontend-migl.onrender.com",
+]
