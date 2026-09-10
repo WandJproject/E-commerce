@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { useCart } from "../../context/CartContext.jsx";
@@ -9,6 +9,7 @@ export default function Cart() {
     useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [imageErrors, setImageErrors] = useState(new Set());
 
   const shipping = subtotal > 100 || subtotal === 0 ? 0 : 9.99;
   const total = subtotal + shipping;
@@ -19,6 +20,10 @@ export default function Cart() {
       return;
     }
     navigate("/checkout");
+  };
+
+  const handleImageError = (itemId) => {
+    setImageErrors((prev) => new Set([...prev, itemId]));
   };
 
   if (loading && items.length === 0) {
@@ -56,14 +61,23 @@ export default function Cart() {
         <div className="space-y-4">
           {items.map((item) => (
             <div key={item.id} className="card p-4 flex gap-4 items-center">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-20 h-20 rounded-lg object-cover bg-neutral-50"
-              />
+              <div className="w-20 h-20 rounded-lg overflow-hidden bg-neutral-50 flex-shrink-0 flex items-center justify-center">
+                {item.image && !imageErrors.has(item.id) ? (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    onError={() => handleImageError(item.id)}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs text-neutral-400 text-center px-1">
+                    No image
+                  </span>
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <Link
-                  to={`/product/${item.id}`}
+                  to={`/product/${item.slug || item.id}`}
                   className="font-medium text-sm hover:text-accent line-clamp-2"
                 >
                   {item.name}

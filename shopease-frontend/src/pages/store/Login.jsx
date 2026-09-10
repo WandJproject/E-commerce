@@ -71,9 +71,6 @@ export default function Login() {
         >
           {isSubmitting ? "Logging in..." : "Login"}
         </button>
-        <p className="text-xs text-neutral-400 text-center">
-          Admin demo: admin@shopease.com / admin123
-        </p>
       </form>
 
       <p className="text-sm text-center text-neutral-500 mt-4">
