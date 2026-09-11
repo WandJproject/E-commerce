@@ -2,38 +2,40 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SlidersHorizontal, X } from "lucide-react";
 import ProductCard from "../../components/common/ProductCard.jsx";
-import { getCategories, getProducts } from "../../api/storeApi.js";
+import { getCategories } from "../../api/storeApi.js";
+import { useProductsQuery } from "../../api/queries.js";
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [products, setProducts] = useState(null);
-  const [categories, setCategories] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [error, setError] = useState(null);
+  const {
+    data: products = [],
+    isLoading: productsLoading,
+    error: productsError,
+  } = useProductsQuery();
 
   useEffect(() => {
     let isMounted = true;
 
-    Promise.all([getProducts(), getCategories()])
-      .then(([nextProducts, nextCategories]) => {
+    getCategories()
+      .then((nextCategories) => {
         if (isMounted) {
-          setProducts(nextProducts);
           setCategories(nextCategories);
           setError(null);
+          setCategoriesLoading(false);
         }
       })
       .catch((err) => {
         if (isMounted) {
-          setProducts([]);
           setCategories([]);
+          setCategoriesLoading(false);
           setError(
-            err?.message || "Failed to load shop data. Please try again.",
+            err?.message || "Failed to load categories. Please try again.",
           );
         }
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
       });
 
     return () => {
@@ -87,7 +89,10 @@ export default function Shop() {
     }
 
     return list;
-  }, [search, category, filter, sort, maxPrice]);
+  }, [products, search, category, filter, sort, maxPrice]);
+
+  const loading = productsLoading || categoriesLoading;
+  const displayError = productsError?.message || error;
 
   const clearFilters = () => setSearchParams({});
 
@@ -146,9 +151,9 @@ export default function Shop() {
 
   return (
     <div className="container-page py-8">
-      {error && (
+      {displayError && (
         <div className="mb-6 rounded-md bg-red-50 border border-red-100 p-4 text-red-700 text-sm">
-          {error}
+          {displayError}
         </div>
       )}
 
@@ -158,7 +163,7 @@ export default function Shop() {
             Loading products...
           </p>
         </div>
-      ) : products && products.length === 0 && !error ? (
+      ) : products.length === 0 && !displayError ? (
         <div className="text-center py-20">
           <p className="text-lg font-medium mb-2">No products available.</p>
           <p className="text-neutral-500">Please check back soon.</p>

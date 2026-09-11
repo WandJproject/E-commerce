@@ -14,7 +14,12 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import ProductCard from "../../components/common/ProductCard.jsx";
-import { getProducts } from "../../api/storeApi.js";
+import {
+  PRODUCT_IMAGE_PLACEHOLDER,
+  getPrimaryProductAlt,
+  getPrimaryProductImage,
+} from "../../api/storeApi.js";
+import { useProductsQuery } from "../../api/queries.js";
 
 const categoryIcons = {
   electronics: Laptop,
@@ -38,31 +43,10 @@ const categoryList = [
 
 export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [topSelling, setTopSelling] = useState([]);
-  const [productsLoading, setProductsLoading] = useState(true);
   const [heroImageErrors, setHeroImageErrors] = useState(new Set());
-
-  useEffect(() => {
-    let isMounted = true;
-
-    getProducts()
-      .then((products) => {
-        if (isMounted) {
-          setTopSelling(products.slice(0, 8));
-          setProductsLoading(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setTopSelling([]);
-          setProductsLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { data: products = [], isLoading: productsLoading } =
+    useProductsQuery();
+  const topSelling = products.slice(0, 8);
 
   const heroSlides =
     topSelling.length > 0
@@ -72,7 +56,8 @@ export default function Home() {
             title: topSelling[0]?.name || "Discover The Best Products For You",
             description:
               topSelling[0]?.description || "Shop the latest trends.",
-            image: topSelling[0]?.image,
+            image: getPrimaryProductImage(topSelling[0]),
+            alt: getPrimaryProductAlt(topSelling[0]),
           },
           ...(topSelling.length > 2
             ? [
@@ -82,7 +67,8 @@ export default function Home() {
                     topSelling[2]?.name || "Upgrade Your Everyday Essentials",
                   description:
                     topSelling[2]?.description || "Explore fresh picks.",
-                  image: topSelling[2]?.image,
+                  image: getPrimaryProductImage(topSelling[2]),
+                  alt: getPrimaryProductAlt(topSelling[2]),
                 },
               ]
             : []),
@@ -93,7 +79,8 @@ export default function Home() {
                   title: topSelling[4]?.name || "Shop Smarter, Save Bigger",
                   description:
                     topSelling[4]?.description || "Curated discounts.",
-                  image: topSelling[4]?.image,
+                  image: getPrimaryProductImage(topSelling[4]),
+                  alt: getPrimaryProductAlt(topSelling[4]),
                 },
               ]
             : []),
@@ -153,21 +140,23 @@ export default function Home() {
                         </Link>
                       </div>
                     </div>
-                    {slide.image && !heroImageErrors.has(slide.image) && (
-                      <div className="hidden md:block h-full min-h-[360px] md:min-h-[390px] relative self-end overflow-hidden rounded-r-2xl">
-                        <div className="absolute inset-0 bg-gradient-to-r from-neutral-100/25 via-transparent to-neutral-100/10" />
-                        <img
-                          src={slide.image}
-                          alt={slide.title}
-                          onError={() =>
-                            setHeroImageErrors(
-                              (prev) => new Set([...prev, slide.image]),
-                            )
-                          }
-                          className="w-full h-full object-cover object-[center_35%]"
-                        />
-                      </div>
-                    )}
+                    <div className="absolute bottom-0 right-0 block h-[55%] w-2/5 overflow-hidden rounded-r-2xl md:static md:h-full md:min-h-[390px] md:w-auto md:self-end">
+                      <div className="absolute inset-0 bg-gradient-to-r from-neutral-100/25 via-transparent to-neutral-100/10" />
+                      <img
+                        src={
+                          slide.image && !heroImageErrors.has(slide.image)
+                            ? slide.image
+                            : PRODUCT_IMAGE_PLACEHOLDER
+                        }
+                        alt={slide.alt || slide.title}
+                        onError={() =>
+                          setHeroImageErrors(
+                            (prev) => new Set([...prev, slide.image]),
+                          )
+                        }
+                        className="w-full h-full object-cover object-[center_35%]"
+                      />
+                    </div>
                   </div>
                 ))}
 
@@ -282,33 +271,6 @@ export default function Home() {
             ))}
           </div>
         )}
-      </section>
-
-      <section className="bg-brand text-white">
-        <div className="container-page py-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div>
-            <p className="font-semibold text-sm">100% Original</p>
-            <p className="text-xs text-neutral-400">
-              We sell original products
-            </p>
-          </div>
-          <div>
-            <p className="font-semibold text-sm">14-Day Return</p>
-            <p className="text-xs text-neutral-400">
-              14 day money back guarantee
-            </p>
-          </div>
-          <div>
-            <p className="font-semibold text-sm">Pay On Delivery</p>
-            <p className="text-xs text-neutral-400">
-              Cash on delivery available
-            </p>
-          </div>
-          <div>
-            <p className="font-semibold text-sm">Best Prices</p>
-            <p className="text-xs text-neutral-400">We offer best prices</p>
-          </div>
-        </div>
       </section>
     </div>
   );
