@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import ProductCard from "../../components/common/ProductCard.jsx";
 import {
-  PRODUCT_IMAGE_PLACEHOLDER,
   getPrimaryProductAlt,
   getPrimaryProductImage,
 } from "../../api/storeApi.js";
@@ -46,49 +45,26 @@ export default function Home() {
   const [heroImageErrors, setHeroImageErrors] = useState(new Set());
   const { data: products = [], isLoading: productsLoading } =
     useProductsQuery();
-  const topSelling = products.slice(0, 8);
+  const topSelling = products;
+  const heroProducts = products.filter((product) => {
+    const image = getPrimaryProductImage(product);
+    return image && !heroImageErrors.has(image);
+  });
 
-  const heroSlides =
-    topSelling.length > 0
-      ? [
-          {
-            badge: "Featured",
-            title: topSelling[0]?.name || "Discover The Best Products For You",
-            description:
-              topSelling[0]?.description || "Shop the latest trends.",
-            image: getPrimaryProductImage(topSelling[0]),
-            alt: getPrimaryProductAlt(topSelling[0]),
-          },
-          ...(topSelling.length > 2
-            ? [
-                {
-                  badge: "New Arrivals",
-                  title:
-                    topSelling[2]?.name || "Upgrade Your Everyday Essentials",
-                  description:
-                    topSelling[2]?.description || "Explore fresh picks.",
-                  image: getPrimaryProductImage(topSelling[2]),
-                  alt: getPrimaryProductAlt(topSelling[2]),
-                },
-              ]
-            : []),
-          ...(topSelling.length > 4
-            ? [
-                {
-                  badge: "Top Deals",
-                  title: topSelling[4]?.name || "Shop Smarter, Save Bigger",
-                  description:
-                    topSelling[4]?.description || "Curated discounts.",
-                  image: getPrimaryProductImage(topSelling[4]),
-                  alt: getPrimaryProductAlt(topSelling[4]),
-                },
-              ]
-            : []),
-        ]
-      : [];
+  const heroSlides = heroProducts.slice(0, 3).map((product, index) => ({
+    badge: ["Featured", "New Arrivals", "Top Deals"][index],
+    title: product.name,
+    description: product.description,
+    image: getPrimaryProductImage(product),
+    alt: getPrimaryProductAlt(product),
+  }));
 
   useEffect(() => {
-    if (heroSlides.length === 0) return;
+    if (heroSlides.length === 0) {
+      setActiveIndex(0);
+      return;
+    }
+    setActiveIndex((prev) => Math.min(prev, heroSlides.length - 1));
     const timer = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % heroSlides.length);
     }, 4500);
@@ -105,7 +81,7 @@ export default function Home() {
           </p>
         </section>
       ) : heroSlides.length > 0 ? (
-        <section className="container-page pt-4">
+        <section className="hidden lg:block container-page pt-4">
           <div className="grid lg:grid-cols-[1fr_260px] gap-4">
             <div className="relative bg-neutral-100 rounded-2xl overflow-hidden">
               <div className="relative min-h-[360px] md:min-h-[390px] overflow-hidden">
@@ -143,11 +119,7 @@ export default function Home() {
                     <div className="absolute bottom-0 right-0 block h-[55%] w-2/5 overflow-hidden rounded-r-2xl md:static md:h-full md:min-h-[390px] md:w-auto md:self-end">
                       <div className="absolute inset-0 bg-gradient-to-r from-neutral-100/25 via-transparent to-neutral-100/10" />
                       <img
-                        src={
-                          slide.image && !heroImageErrors.has(slide.image)
-                            ? slide.image
-                            : PRODUCT_IMAGE_PLACEHOLDER
-                        }
+                        src={slide.image}
                         alt={slide.alt || slide.title}
                         onError={() =>
                           setHeroImageErrors(
