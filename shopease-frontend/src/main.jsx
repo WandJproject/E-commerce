@@ -8,6 +8,7 @@ import { CartProvider } from "./context/CartContext.jsx";
 import { WishlistProvider } from "./context/WishlistContext.jsx";
 import "./index.css";
 
+// redeploy trigger
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
