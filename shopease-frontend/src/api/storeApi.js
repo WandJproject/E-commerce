@@ -245,9 +245,21 @@ function normalizeProduct(apiProduct) {
 }
 
 export async function getProducts() {
-  const payload = await fetchJson(`${API_BASE_URL}/products/`);
-  const results = Array.isArray(payload?.results) ? payload.results : [];
-  return results.map(normalizeProduct);
+  const products = [];
+  let nextUrl = `${API_BASE_URL}/products/`;
+
+  while (nextUrl) {
+    const payload = await fetchJson(nextUrl);
+    const results = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.results)
+        ? payload.results
+        : [];
+    products.push(...results.map(normalizeProduct));
+    nextUrl = Array.isArray(payload) ? null : payload?.next || null;
+  }
+
+  return products;
 }
 
 export async function getProductById(id) {
