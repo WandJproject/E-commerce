@@ -1,7 +1,5 @@
 from django.urls import path
 
-from backend.apps.cart.api.views_update import UpdateCartAPIView
-
 from .views import (
     AddToCartAPIView,
     CartAPIView,
@@ -28,15 +26,10 @@ urlpatterns = [
         RemoveFromCartAPIView.as_view(),
         name="remove-from-cart",
     ),
-path(
-    "update/",
-    UpdateCartAPIView.as_view(),
-    name="update-cart",
-),
 
-path(
-    "clear/",
-    ClearCartAPIView.as_view(),
-    name="clear-cart",
-),
+    path(
+        "clear/",
+        ClearCartAPIView.as_view(),
+        name="clear-cart",
+    ),
 ]
