@@ -2,6 +2,8 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   "https://e-commerce-6kpd.onrender.com/api/v1";
 
+const API_ORIGIN = new URL(API_BASE_URL).origin;
+export const PRODUCT_IMAGE_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E";
 async function fetchJson(url) {
   const response = await fetch(url);
 
@@ -155,6 +157,50 @@ export async function apiGetReviews() {
   }
 }
 
+export function getPrimaryProductImage(product) {
+  const images = normalizeProductImages(product?.images);
+  return toAbsoluteImageUrl(
+    images.find((image) => image.is_primary)?.url || images[0]?.url || "",
+  );
+}
+
+export function getPrimaryProductAlt(product) {
+  const images = normalizeProductImages(product?.images);
+  return (
+    images.find((image) => image.is_primary)?.alt || product?.name || "Product"
+  );
+}
+
+function toAbsoluteImageUrl(url) {
+  if (!url || typeof url !== "string") return "";
+  if (url.startsWith("/")) return `${API_ORIGIN}${url}`;
+  return url;
+}
+
+export function normalizeProductImages(images) {
+  if (typeof images === "string") {
+    return [
+      { url: toAbsoluteImageUrl(images), alt: "Product", is_primary: true },
+    ];
+  }
+  if (!Array.isArray(images)) return [];
+  return images
+    .map((image) => {
+      if (typeof image === "string") {
+        return {
+          url: toAbsoluteImageUrl(image),
+          alt: "Product",
+          is_primary: false,
+        };
+      }
+      return {
+        url: toAbsoluteImageUrl(image?.image || image?.url),
+        alt: image?.alt_text || image?.alt || "Product",
+        is_primary: Boolean(image?.is_primary),
+      };
+    })
+    .filter((image) => image.url);
+}
 function normalizeProduct(apiProduct) {
   const price = Number(apiProduct.price ?? 0);
   const discountPrice = Number(
