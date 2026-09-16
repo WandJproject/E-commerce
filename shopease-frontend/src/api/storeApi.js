@@ -3,7 +3,8 @@ const API_BASE_URL =
   "https://e-commerce-6kpd.onrender.com/api/v1";
 
 const API_ORIGIN = new URL(API_BASE_URL).origin;
-export const PRODUCT_IMAGE_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E";
+export const PRODUCT_IMAGE_PLACEHOLDER =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E";
 async function fetchJson(url) {
   const response = await fetch(url);
 
@@ -263,10 +264,14 @@ export async function getProductById(id) {
 
 export async function getProductBySlug(slug) {
   try {
-    const payload = await fetchJson(`${API_BASE_URL}/products/`);
-    const results = Array.isArray(payload?.results) ? payload.results : [];
-    const match = results.find((product) => product.slug === slug);
-    return match ? normalizeProduct(match) : null;
+    const products = await getProducts();
+
+    return (
+      products.find(
+        (product) =>
+          product.slug === slug || String(product.id) === String(slug),
+      ) || null
+    );
   } catch {
     return null;
   }
