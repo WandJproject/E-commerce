@@ -43,8 +43,13 @@ const categoryList = [
 export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [heroImageErrors, setHeroImageErrors] = useState(new Set());
-  const { data: products = [], isLoading: productsLoading } =
-    useProductsQuery();
+  const {
+    data: products = [],
+    isLoading: productsLoading,
+    isError: productsError,
+    error: productsQueryError,
+    isSuccess: productsLoaded,
+  } = useProductsQuery();
   const topSelling = products;
   const heroProducts = products.filter((product) => {
     const image = getPrimaryProductImage(product);
@@ -80,8 +85,15 @@ export default function Home() {
             Loading featured products...
           </p>
         </section>
+      ) : productsError ? (
+        <section className="container-page py-16">
+          <div className="rounded-md bg-red-50 border border-red-100 p-4 text-red-700 text-sm">
+            {productsQueryError?.message ||
+              "Failed to load products. Please try again."}
+          </div>
+        </section>
       ) : heroSlides.length > 0 ? (
-        <section className="hidden lg:block container-page pt-4">
+        <section className="hidden md:block container-page pt-4">
           <div className="grid lg:grid-cols-[1fr_260px] gap-4">
             <div className="relative bg-neutral-100 rounded-2xl overflow-hidden">
               <div className="relative min-h-[360px] md:min-h-[390px] overflow-hidden">
@@ -230,7 +242,7 @@ export default function Home() {
             View All
           </Link>
         </div>
-        {topSelling.length === 0 ? (
+        {productsLoaded && topSelling.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-neutral-500">
               No products available at this time.
