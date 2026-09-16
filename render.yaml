@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: e-commerce-frontend-migl
+    runtime: static
+    buildCommand: cd shopease-frontend && npm install && npm run build
+    staticPublishPath: shopease-frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

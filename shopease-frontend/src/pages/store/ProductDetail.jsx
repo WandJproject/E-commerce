@@ -358,17 +358,14 @@ export default function ProductDetail() {
                   <div key={r.id || r._id} className="p-3 border rounded-md">
                     <div className="flex items-center justify-between mb-2">
                       <div className="font-medium">
-                        {r.user || r.author || r.name || "Anonymous"}
+                        {r.user_email || r.author || r.name || "Anonymous"}
                       </div>
                       <div className="text-xs text-neutral-500">
-                        {new Date(
-                          r.created_at || r.created || Date.now(),
-                        ).toLocaleDateString()}
+                        {new Date(r.created_at).toLocaleDateString()}
                       </div>
                     </div>
-                    <div className="text-sm text-neutral-700">
-                      {r.comment || r.body || r.message || r.text}
-                    </div>
+                    <StarRating rating={r.rating} />
+                    <div className="text-sm text-neutral-700">{r.comment}</div>
                   </div>
                 ))}
               </div>
