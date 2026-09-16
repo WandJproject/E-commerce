@@ -1,15 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import StarRating from "./StarRating.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
 import { useCart } from "../../context/CartContext.jsx";
+import {
+  getPrimaryProductAlt,
+  getPrimaryProductImage,
+} from "../../api/storeApi.js";
 
 export default function ProductCard({ product }) {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const wishlisted = isWishlisted(product.id);
+  const [imageError, setImageError] = useState(false);
+  const primaryImage = getPrimaryProductImage(product);
 
   const handleWishlist = (e) => {
     e.preventDefault();
@@ -21,18 +27,27 @@ export default function ProductCard({ product }) {
     addToCart(product, 1);
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   return (
     <Link
-      to={`/product/${product.id}`}
+      to={`/product/${product.slug || product.id}`}
       className="card group overflow-hidden hover:shadow-md transition-shadow flex flex-col"
     >
-      <div className="relative bg-neutral-50 aspect-square overflow-hidden">
-        <img
-          src={product.image}
-          alt={product.name}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+      <div className="relative bg-neutral-50 aspect-square overflow-hidden flex items-center justify-center">
+        {!imageError && primaryImage ? (
+          <img
+            src={primaryImage}
+            alt={getPrimaryProductAlt(product)}
+            loading="lazy"
+            onError={handleImageError}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <span className="text-xs text-neutral-400">Image unavailable</span>
+        )}
         {product.discount > 0 && (
           <span className="absolute top-2 left-2 bg-red-500 text-white text-[11px] font-semibold px-2 py-0.5 rounded">
             -{product.discount}%

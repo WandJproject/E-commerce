@@ -12,7 +12,6 @@ from .serializers import (
     CartSerializer,
     RemoveFromCartSerializer,
 )
-from .views_update import UpdateCartAPIView
 class CartAPIView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]

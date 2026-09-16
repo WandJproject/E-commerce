@@ -4,6 +4,7 @@ from .views import (
     PaymentListAPIView,
     InitializePaymentAPIView,
     VerifyPaymentAPIView,
+    PaystackWebhookAPIView,
 )
 
 urlpatterns = [
@@ -23,5 +24,11 @@ urlpatterns = [
         "verify/<str:reference>/",
         VerifyPaymentAPIView.as_view(),
         name="payment-verify",
+    ),
+
+    path(
+        "webhook/",
+        PaystackWebhookAPIView.as_view(),
+        name="paystack-webhook",
     ),
 ]

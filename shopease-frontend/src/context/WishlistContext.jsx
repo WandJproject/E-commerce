@@ -28,9 +28,10 @@ export function WishlistProvider({ children }) {
         setItems(
           payload.map((p) => ({
             id: p.product || p.product_id || p.id,
-            name: p.name || "",
-            price: Number(p.price ?? 0),
-            image: p.image || "",
+            slug: p.product_slug || p.slug || null,
+            name: p.product_name || p.name || "",
+            price: Number(p.product_price ?? p.price ?? 0),
+            image: p.product_image || p.image || "",
           })),
         );
       } else {

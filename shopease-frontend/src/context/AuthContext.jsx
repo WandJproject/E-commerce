@@ -5,20 +5,6 @@ const AuthContext = createContext(null);
 
 const STORAGE_KEY = "shopease_auth_user";
 const TOKENS_KEY = "shopease_auth_tokens";
-const USERS_KEY = "shopease_registered_users";
-
-function loadUsers() {
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -118,7 +104,6 @@ export function AuthProvider({ children }) {
       return { success: false, message: "Email and password are required." };
     setAuthError(null);
 
-    // Try backend login first
     try {
       const data = await apiLogin({ emailOrUsername: email, password });
       const tokens = {
@@ -126,43 +111,17 @@ export function AuthProvider({ children }) {
         refresh: data.refresh || null,
       };
       const user = data.user || data.profile || { email, username: email };
-      if (tokens.access) {
-        persist(user, tokens);
-        return { success: true, user };
+      if (!tokens.access) {
+        setAuthError("Invalid email or password.");
+        return { success: false, message: "Invalid email or password." };
       }
+      persist(user, tokens);
+      return { success: true, user };
     } catch (err) {
-      // ignore and fallback to local demo
+      const message = err?.message || "Invalid email or password.";
+      setAuthError(message);
+      return { success: false, message };
     }
-
-    // Demo admin account
-    if (
-      email.toLowerCase() === "admin@shopease.com" &&
-      password === "admin123"
-    ) {
-      const adminUser = {
-        id: "admin-1",
-        name: "Admin User",
-        email,
-        role: "admin",
-      };
-      persist(adminUser, null);
-      return { success: true, user: adminUser };
-    }
-
-    // Local fallback users (demo)
-    const users = loadUsers();
-    const found = users.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase() &&
-        u.password === password,
-    );
-    if (!found) {
-      setAuthError("Invalid email or password.");
-      return { success: false, message: "Invalid email or password." };
-    }
-    const { password: _pw, ...safeUser } = found;
-    persist(safeUser, null);
-    return { success: true, user: safeUser };
   };
 
   const register = async ({ name, email, password }) => {
@@ -175,7 +134,6 @@ export function AuthProvider({ children }) {
     const [first_name, ...rest] = name.trim().split(" ");
     const last_name = rest.join(" ");
 
-    // Try backend registration
     try {
       const data = await apiRegister({
         username: email,
@@ -191,33 +149,19 @@ export function AuthProvider({ children }) {
       };
       const user = data.user ||
         data.profile || { name, email, username: email };
-      if (tokens.access) {
-        persist(user, tokens);
-        return { success: true, user };
+      if (!tokens.access) {
+        return {
+          success: false,
+          message: "Registration failed. Please try again.",
+        };
       }
+      persist(user, tokens);
+      return { success: true, user };
     } catch (err) {
-      // ignore and fallback to local
+      const message = err?.message || "Registration failed. Please try again.";
+      setAuthError(message);
+      return { success: false, message };
     }
-
-    const users = loadUsers();
-    if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      return {
-        success: false,
-        message: "An account with this email already exists.",
-      };
-    }
-    const newUser = {
-      id: `cust-${Date.now()}`,
-      name,
-      email,
-      password,
-      role: "customer",
-    };
-    users.push(newUser);
-    saveUsers(users);
-    const { password: _pw, ...safeUser } = newUser;
-    persist(safeUser, null);
-    return { success: true, user: safeUser };
   };
 
   const logout = () => {

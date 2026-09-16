@@ -3,11 +3,49 @@ import {
   apiGetCart,
   apiAddToCart,
   apiRemoveFromCart,
+  getProducts,
 } from "../api/storeApi.js";
 
 const CartContext = createContext(null);
 const STORAGE_KEY = "shopease_cart";
 const TOKENS_KEY = "shopease_auth_tokens";
+let productCatalogCache = null;
+
+async function getProductCatalogMap() {
+  if (productCatalogCache) return productCatalogCache;
+
+  const products = await getProducts();
+  productCatalogCache = new Map(
+    products.map((product) => [Number(product.id), product]),
+  );
+  return productCatalogCache;
+}
+
+function normalizeCartItem(item, productMap) {
+  const productId = Number(item.product ?? item.product_id ?? item.id ?? 0);
+  const matchedProduct =
+    productMap.get(productId) ||
+    (item.id != null ? productMap.get(Number(item.id)) : undefined);
+
+  const resolvedName =
+    item.product_name || item.name || matchedProduct?.name || "Product";
+  const resolvedPrice = Number(
+    item.product_price ?? item.price ?? matchedProduct?.price ?? 0,
+  );
+  const resolvedImage =
+    (matchedProduct?.image && String(matchedProduct.image).trim()) ||
+    (typeof item.image === "string" && item.image.trim()) ||
+    "";
+
+  return {
+    id: productId || item.id,
+    slug: item.product_slug || item.slug || matchedProduct?.slug || productId,
+    name: resolvedName,
+    price: resolvedPrice,
+    image: resolvedImage,
+    quantity: Number(item.quantity ?? item.qty ?? 1),
+  };
+}
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
@@ -20,28 +58,24 @@ export function CartProvider({ children }) {
     try {
       const tokenRaw = localStorage.getItem(TOKENS_KEY);
       const tokens = tokenRaw ? JSON.parse(tokenRaw) : null;
+      const productMap = await getProductCatalogMap();
+
       if (tokens?.access) {
         const res = await apiGetCart(tokens.access);
         const payload = Array.isArray(res?.items)
           ? res.items
           : res?.results || [];
-        setItems(
-          payload.map((i) => ({
-            id: i.product || i.product_id || i.id,
-            name: i.name || "",
-            price: Number(i.price ?? 0),
-            image: i.image || "",
-            quantity: i.quantity || i.qty || 1,
-          })),
-        );
+        setItems(payload.map((item) => normalizeCartItem(item, productMap)));
       } else {
         const raw = localStorage.getItem(STORAGE_KEY);
-        setItems(raw ? JSON.parse(raw) : []);
+        const fallback = raw ? JSON.parse(raw) : [];
+        setItems(fallback.map((item) => normalizeCartItem(item, productMap)));
       }
     } catch (err) {
       setError(err.message || "Failed to load cart.");
       const raw = localStorage.getItem(STORAGE_KEY);
-      setItems(raw ? JSON.parse(raw) : []);
+      const fallback = raw ? JSON.parse(raw) : [];
+      setItems(fallback);
     } finally {
       setLoading(false);
     }
@@ -67,15 +101,8 @@ export function CartProvider({ children }) {
         const payload = Array.isArray(res?.items)
           ? res.items
           : res?.results || [];
-        setItems(
-          payload.map((i) => ({
-            id: i.product || i.product_id || i.id,
-            name: i.name || "",
-            price: Number(i.price ?? 0),
-            image: i.image || "",
-            quantity: i.quantity || i.qty || 1,
-          })),
-        );
+        const productMap = await getProductCatalogMap();
+        setItems(payload.map((item) => normalizeCartItem(item, productMap)));
         return { success: true };
       } catch (err) {
         setError(err.message || "Failed to add item to cart.");
@@ -121,15 +148,8 @@ export function CartProvider({ children }) {
         const payload = Array.isArray(res?.items)
           ? res.items
           : res?.results || [];
-        setItems(
-          payload.map((i) => ({
-            id: i.product || i.product_id || i.id,
-            name: i.name || "",
-            price: Number(i.price ?? 0),
-            image: i.image || "",
-            quantity: i.quantity || i.qty || 1,
-          })),
-        );
+        const productMap = await getProductCatalogMap();
+        setItems(payload.map((item) => normalizeCartItem(item, productMap)));
         return { success: true };
       } catch (err) {
         setError(err.message || "Failed to remove item from cart.");

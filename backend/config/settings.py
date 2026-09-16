@@ -13,7 +13,6 @@ from decouple import config
 from pathlib import Path
 from datetime import timedelta
 
-from decouple import config
 import dj_database_url
 import os
 
@@ -28,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config("DEBUG", cast=bool)
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS"
@@ -44,27 +43,25 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "cloudinary",
+    "cloudinary_storage",
     'rest_framework',
     'rest_framework_simplejwt',
-
     'django_filters',
-
     'apps.accounts.apps.AccountsConfig',
     'apps.products',
     "apps.cart",
     "apps.wishlist",
     "apps.orders",
     "apps.reviews",
-
     "apps.payments",
-
     "corsheaders",
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -137,13 +134,28 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+STATIC_URL = "/static/"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-STATICFILES_STORAGE = (
-    "whitenoise.storage.CompressedManifestStaticFilesStorage"
-)
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": config("CLOUDINARY_API_KEY"),
+    "API_SECRET": config("CLOUDINARY_API_SECRET"),
+}
+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 AUTH_USER_MODEL = "accounts.User"
 
 REST_FRAMEWORK = {
@@ -168,6 +180,8 @@ REST_FRAMEWORK = {
 
     "PAGE_SIZE": 10,
 
+    "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
+
 }
 
 SIMPLE_JWT = {
@@ -177,15 +191,13 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
 
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:5173",
-).split(",")
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "https://e-commerce-frontend-migl.onrender.com",
+]
 
-CSRF_TRUSTED_ORIGINS = config(
-    "CSRF_TRUSTED_ORIGINS",
-    default="http://localhost:5173",
-).split(",")
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "https://e-commerce-frontend-migl.onrender.com",
+]
