@@ -210,9 +210,7 @@ function normalizeProduct(apiProduct) {
     discountPrice < price
       ? Math.round(((price - discountPrice) / price) * 100)
       : 0;
-  const primaryImage = apiProduct.images?.find(
-    (image) => image.is_primary,
-  )?.image;
+  const images = normalizeProductImages(apiProduct.images);
   const categoryId =
     apiProduct.category?.slug ||
     apiProduct.category?.name?.toLowerCase() ||
@@ -233,11 +231,7 @@ function normalizeProduct(apiProduct) {
     stock: Number(apiProduct.stock_quantity ?? 0),
     category: categoryId,
     brand: brandName,
-    image:
-      primaryImage || apiProduct.images?.[0]?.image || apiProduct.image || null,
-    gallery: (apiProduct.images || [])
-      .map((image) => image.image)
-      .filter(Boolean),
+    images,
     highlights: [],
     isFeatured: Boolean(apiProduct.is_featured),
     isAvailable: Boolean(apiProduct.is_available),
