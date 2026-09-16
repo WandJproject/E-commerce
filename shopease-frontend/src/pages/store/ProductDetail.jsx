@@ -13,10 +13,11 @@ import ProductCard from "../../components/common/ProductCard.jsx";
 import { useCart } from "../../context/CartContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
 import {
-  getProductById,
   getProductBySlug,
   getProducts,
   apiGetProductReviews,
+  getPrimaryProductImage,
+  normalizeProductImages,
 } from "../../api/storeApi.js";
 
 export default function ProductDetail() {
@@ -164,7 +165,16 @@ export default function ProductDetail() {
     return imageUrl && !imageErrors.has(imageUrl);
   };
 
-  const displayGallery = product.gallery.filter(Boolean);
+  const normalizedImages = normalizeProductImages(product.images);
+  const primaryImage = getPrimaryProductImage(product);
+  const displayGallery = primaryImage
+    ? [
+        primaryImage,
+        ...normalizedImages
+          .map((image) => image.url)
+          .filter((imageUrl) => imageUrl !== primaryImage),
+      ]
+    : normalizedImages.map((image) => image.url);
   const mainImageUrl = displayGallery[activeImage];
   const mainImageValid = hasValidImage(mainImageUrl);
 
