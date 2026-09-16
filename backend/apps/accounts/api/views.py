@@ -2,24 +2,21 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import RegisterSerializer, UserSerializer
 
 class WelcomeAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request):
-        return Response(
-            {
-                "message": "Welcome to the E-Commerce API!",
-                "version": "v1",
-                "status": "success",
-            }
-        )
+        return Response({
+            "message": "Welcome to the E-Commerce API!",
+            "version": "v1",
+            "status": "success",
+        })
 
 class RegisterAPIView(APIView):
-    """
-    Register a new user and immediately return JWT tokens.
-    """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)

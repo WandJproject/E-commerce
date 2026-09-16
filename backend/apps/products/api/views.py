@@ -15,6 +15,8 @@ from .serializers import (
     ProductSerializer,
 )
 
+from .filters import ProductFilter
+
 class CategoryViewSet(viewsets.ModelViewSet):
     """
     API endpoint for managing categories.
@@ -45,22 +47,20 @@ class ProductViewSet(viewsets.ModelViewSet):
         filters.OrderingFilter,
     ]
 
-    filterset_fields = [
-        "category",
-        "brand",
-        "is_available",
-        "is_featured",
-    ]
+    filterset_class = ProductFilter
 
     search_fields = [
         "name",
         "description",
+        "brand__name",
+        "category__name",
     ]
 
     ordering_fields = [
         "price",
         "created_at",
         "stock_quantity",
+        "name",
     ]
 
     ordering = [
