@@ -4,6 +4,7 @@ import {
   Heart,
   Minus,
   Plus,
+  Star,
   Truck,
   PackageCheck,
   ChevronRight,
@@ -12,6 +13,8 @@ import StarRating from "../../components/common/StarRating.jsx";
 import ProductCard from "../../components/common/ProductCard.jsx";
 import { useCart } from "../../context/CartContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { useReviewMutation } from "../../api/queries.js";
 import {
   getProductBySlug,
   getProducts,
@@ -25,6 +28,8 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const { accessToken, isAuthenticated } = useAuth();
+  const reviewMutation = useReviewMutation(accessToken);
 
   const [product, setProduct] = useState(null);
   const [productError, setProductError] = useState(null);
@@ -36,6 +41,10 @@ export default function ProductDetail() {
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState(null);
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState(null);
+  const [reviewSubmitError, setReviewSubmitError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -157,6 +166,42 @@ export default function ProductDetail() {
     navigate("/cart");
   };
 
+  const handleReviewSubmit = async (event) => {
+    event.preventDefault();
+    setReviewSuccess(null);
+    setReviewSubmitError(null);
+
+    if (!isAuthenticated || !accessToken) {
+      setReviewSubmitError("Please log in to submit a review.");
+      return;
+    }
+    if (!selectedRating) {
+      setReviewSubmitError("Please select a rating.");
+      return;
+    }
+    if (!reviewComment.trim()) {
+      setReviewSubmitError("Please enter a comment.");
+      return;
+    }
+
+    try {
+      await reviewMutation.mutateAsync({
+        product: product.id,
+        rating: selectedRating,
+        comment: reviewComment.trim(),
+      });
+      const refreshedReviews = await apiGetProductReviews(product.id);
+      setReviews(refreshedReviews);
+      setSelectedRating(0);
+      setReviewComment("");
+      setReviewSuccess("Your review was submitted successfully.");
+    } catch (error) {
+      setReviewSubmitError(
+        error?.message || "Unable to submit your review. Please try again.",
+      );
+    }
+  };
+
   const handleImageError = (imageUrl) => {
     setImageErrors((prev) => new Set([...prev, imageUrl]));
   };
@@ -246,7 +291,7 @@ export default function ProductDetail() {
           <div className="flex items-center gap-2 mb-4">
             <StarRating rating={product.rating} />
             <span className="text-sm text-neutral-500">
-              ({product.reviewsCount} Reviews)
+              ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
             </span>
           </div>
 
@@ -341,6 +386,69 @@ export default function ProductDetail() {
             />
             {isWishlisted(product.id) ? "Added to Wishlist" : "Add to Wishlist"}
           </button>
+
+          <form
+            onSubmit={handleReviewSubmit}
+            className="mt-6 border-t border-neutral-200 pt-6"
+          >
+            <h2 className="text-lg font-bold mb-3">Write a Review</h2>
+            {!isAuthenticated && (
+              <p className="text-sm text-neutral-600 mb-4">
+                Please log in to submit a review.
+              </p>
+            )}
+            <div className="mb-4">
+              <span className="block text-sm font-medium mb-2">Rating</span>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => setSelectedRating(rating)}
+                    className="p-1"
+                    aria-label={`Rate ${rating} out of 5`}
+                    aria-pressed={selectedRating === rating}
+                  >
+                    <Star
+                      size={20}
+                      className={
+                        rating <= selectedRating
+                          ? "fill-amber-400 text-amber-400"
+                          : "fill-neutral-200 text-neutral-200"
+                      }
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label
+              htmlFor="review-comment"
+              className="block text-sm font-medium mb-2"
+            >
+              Comment
+            </label>
+            <textarea
+              id="review-comment"
+              value={reviewComment}
+              onChange={(event) => setReviewComment(event.target.value)}
+              className="w-full min-h-24 rounded-md border border-neutral-300 p-3 text-sm resize-y"
+              placeholder="Share your experience with this product"
+              disabled={reviewMutation.isPending}
+            />
+            {reviewSubmitError && (
+              <p className="mt-2 text-sm text-red-600">{reviewSubmitError}</p>
+            )}
+            {reviewSuccess && (
+              <p className="mt-2 text-sm text-green-600">{reviewSuccess}</p>
+            )}
+            <button
+              type="submit"
+              className="btn-primary mt-4"
+              disabled={reviewMutation.isPending}
+            >
+              {reviewMutation.isPending ? "Submitting..." : "Submit Review"}
+            </button>
+          </form>
 
           {reviewsLoading ? (
             <div className="mt-6 rounded-md bg-neutral-50 p-4 text-neutral-600">
