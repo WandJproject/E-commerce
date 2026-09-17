@@ -15,16 +15,70 @@ async function fetchJson(url) {
   return response.json();
 }
 
-async function fetchJsonWithOptions(url, options = {}) {
+async function fetchJsonWithOptions(
+  url,
+  options = {},
+  allowTokenRefresh = true,
+) {
   const response = await fetch(url, options);
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => null);
-    const message = text || `Request failed with status ${response.status}`;
-    throw new Error(message);
+  if (response.ok) return response.json().catch(() => null);
+
+  const text = await response.text().catch(() => null);
+  const message = text || `Request failed with status ${response.status}`;
+  const originalError = new Error(message);
+  const authorization =
+    options.headers?.Authorization || options.headers?.authorization;
+
+  // Retry one protected request after refreshing its access token once.
+  if (response.status !== 401 || !authorization || !allowTokenRefresh) {
+    throw originalError;
   }
 
-  return response.json().catch(() => null);
+  let storedTokens;
+  try {
+    const rawTokens = localStorage.getItem("shopease_auth_tokens");
+    storedTokens = rawTokens ? JSON.parse(rawTokens) : null;
+  } catch {
+    throw originalError;
+  }
+
+  if (!storedTokens?.refresh) throw originalError;
+
+  let refreshData;
+  try {
+    refreshData = await apiRefreshToken({ refresh: storedTokens.refresh });
+  } catch {
+    throw originalError;
+  }
+
+  const newAccessToken = refreshData?.access || refreshData?.token;
+  if (!newAccessToken) throw originalError;
+
+  const nextTokens = {
+    access: newAccessToken,
+    refresh: refreshData.refresh || storedTokens.refresh,
+  };
+  localStorage.setItem("shopease_auth_tokens", JSON.stringify(nextTokens));
+
+  const retryOptions = {
+    ...options,
+    headers: {
+      ...options.headers,
+      ...authHeaders(newAccessToken),
+    },
+  };
+  const retryResponse = await fetch(url, retryOptions);
+
+  if (!retryResponse.ok) {
+    if (retryResponse.status === 401) throw originalError;
+    const retryText = await retryResponse.text().catch(() => null);
+    throw new Error(
+      retryText || `Request failed with status ${retryResponse.status}`,
+    );
+  }
+
+  return retryResponse.json().catch(() => null);
 }
 
 function authHeaders(token) {
@@ -56,11 +110,15 @@ export async function apiLogin({ emailOrUsername, password }) {
 }
 
 export async function apiRefreshToken({ refresh }) {
-  return fetchJsonWithOptions(`${API_BASE_URL}/auth/token/refresh/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ refresh }),
-  });
+  return fetchJsonWithOptions(
+    `${API_BASE_URL}/auth/token/refresh/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ refresh }),
+    },
+    false,
+  );
 }
 
 // Cart
