@@ -287,7 +287,7 @@ function normalizeProduct(apiProduct) {
     oldPrice: Math.max(price, discountPrice),
     discount,
     rating: 4.5,
-    reviewsCount: 0,
+    reviewsCount: Number(apiProduct.review_count ?? 0),
     stock: Number(apiProduct.stock_quantity ?? 0),
     category: categoryId,
     brand: brandName,
