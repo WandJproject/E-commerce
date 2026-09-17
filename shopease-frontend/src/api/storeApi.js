@@ -133,12 +133,13 @@ export async function apiCheckout(token, payload = {}) {
 
 // Reviews
 export async function apiGetProductReviews(productId) {
-  try {
-    const url = `${API_BASE_URL}/reviews/product/${productId}/`;
-    return await fetchJson(url);
-  } catch {
-    return [];
-  }
+  const url = `${API_BASE_URL}/reviews/product/${productId}/`;
+  const payload = await fetchJson(url);
+  return Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.results)
+      ? payload.results
+      : [];
 }
 
 export async function apiPostReview(token, reviewPayload) {

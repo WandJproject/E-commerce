@@ -20,6 +20,7 @@ class ProductReviewListAPIView(
 ):
 
     serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
 
