@@ -1,9 +1,16 @@
+from django.contrib.auth import get_user_model
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
+
 from .serializers import RegisterSerializer, UserSerializer
+
+
+User = get_user_model()
+
 
 class WelcomeAPIView(APIView):
     permission_classes = [AllowAny]
@@ -14,6 +21,7 @@ class WelcomeAPIView(APIView):
             "version": "v1",
             "status": "success",
         })
+
 
 class RegisterAPIView(APIView):
     permission_classes = [AllowAny]
@@ -36,6 +44,7 @@ class RegisterAPIView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+
 class ProfileAPIView(APIView):
     """
     Return the authenticated user's profile.
@@ -45,5 +54,19 @@ class ProfileAPIView(APIView):
 
     def get(self, request):
         serializer = UserSerializer(request.user)
+
+        return Response(serializer.data)
+
+
+class UsersListAPIView(APIView):
+    """
+    Return a list of registered users.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        users = User.objects.all().order_by("id")
+        serializer = UserSerializer(users, many=True)
 
         return Response(serializer.data)

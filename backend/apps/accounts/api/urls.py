@@ -7,11 +7,18 @@ from rest_framework_simplejwt.views import (
 from .views import (
     ProfileAPIView,
     RegisterAPIView,
+    UsersListAPIView,
     WelcomeAPIView,
 )
 
 urlpatterns = [
     path("", WelcomeAPIView.as_view(), name="api-home"),
+
+    path(
+        "users/",
+        UsersListAPIView.as_view(),
+        name="users-list",
+    ),
 
     path(
         "auth/register/",
