@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    AdminReviewListAPIView,
     ProductReviewListAPIView,
     ReviewCreateAPIView,
     ReviewDeleteAPIView,
@@ -13,6 +14,12 @@ urlpatterns = [
         "",
         ReviewCreateAPIView.as_view(),
         name="review-create",
+    ),
+
+    path(
+        "admin/",
+        AdminReviewListAPIView.as_view(),
+        name="admin-reviews",
     ),
 
     path(
